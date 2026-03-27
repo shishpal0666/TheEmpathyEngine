@@ -6,6 +6,7 @@ _vader = SentimentIntensityAnalyzer()
 
 def detect_with_vader(text: str) -> tuple[str, float]:
     scores = _vader.polarity_scores(text)
+    # example: {'neg': 0.0, 'neu': 0.417, 'pos': 0.583, 'compound': 0.6369}
     compound = scores['compound']
     intensity = abs(compound)
 
@@ -41,7 +42,7 @@ HF_TO_INTERNAL = {
 }
 
 def detect_with_hf(text: str) -> tuple[str, float]:
-    result = _hf_classifier(text)[0][0]
+    result = _hf_classifier(text)[0][0] # example: [{'label': 'joy', 'score': 0.9998}] 
     raw_label = result['label'].lower()
     confidence = result['score']
     label = HF_TO_INTERNAL.get(raw_label, 'neutral')

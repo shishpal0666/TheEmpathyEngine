@@ -1,22 +1,20 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Virtual environment
+# Virtual environments
 venv/
 env/
-.venv/
+.env
 
-# Audio
-static/output.wav
+# Python compilation files
+__pycache__/
+*.pyc
+*.pyo
 
-# HuggingFace & Machine Learning
+# Audio outputs
+static/*.wav
+static/*.mp3
+
+# Ignore HF model cache (if any)
 .cache/
-huggingface/
 
-# IDE/OS
-.vscode/
-.idea/
+# OS files
 .DS_Store
+Thumbs.db

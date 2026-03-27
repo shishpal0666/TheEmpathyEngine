@@ -34,7 +34,8 @@ def apply_vocal_effects(audio: AudioSegment, profile: dict) -> AudioSegment:
     semitones = profile.get('pitch_shift', 0)
     if semitones != 0:
         import math
-        freq_ratio = math.pow(2, semitones / 12.0)
+        freq_ratio = math.pow(2, semitones / 12.0) 
+        # In music, raising a sound by exactly 1 octave (12 semitones) doubles its frequency (2.0x).
         original_frame_rate = processed.frame_rate
         shifted = processed._spawn(processed.raw_data, overrides={
             "frame_rate": int(processed.frame_rate * freq_ratio)
