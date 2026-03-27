@@ -49,6 +49,16 @@ def detect_with_hf(text: str) -> tuple[str, float]:
 
 # --- Main Combined Function ---
 def detect_emotion(text: str, use_hf: bool = True) -> tuple[str, float]:
+    """
+    Main function. Always call this — not the individual detectors.
+
+    Returns (emotion_label, intensity)
+    emotion_label: happy | angry | sad | fearful | surprised | disgusted | neutral | positive
+    intensity: 0.0 to 1.0
+
+    use_hf=True  → use HuggingFace (more accurate, 7 emotions)
+    use_hf=False → use VADER only (faster, 5 emotions, offline)
+    """
     try:
         if use_hf:
             return detect_with_hf(text)
@@ -60,11 +70,18 @@ def detect_emotion(text: str, use_hf: bool = True) -> tuple[str, float]:
 
 if __name__ == '__main__':
     test_sentences = [
+        # Expected: happy/joy
         ("I just got the job offer — this is incredible!", "happy"),
+        # Expected: angry
         ("I am absolutely furious about this complete disaster.", "angry"),
+        # Expected: sad
         ("I feel so lost and alone right now.", "sad"),
+        # Expected: neutral
         ("The meeting is scheduled for 3pm tomorrow.", "neutral"),
+        # Tricky: sarcasm — VADER gets this wrong, HF often gets it right
         ("Oh great, another Monday.", "angry/sad"),
+        # Mild positive
+        ("That was a pretty good presentation.", "positive/happy"),
     ]
 
     print(f"{'Sentence':<50} {'HF Result':<20} {'VADER Result':<20}")
