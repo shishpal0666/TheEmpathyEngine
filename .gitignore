@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Audio
+static/output.wav
+
+# HuggingFace & Machine Learning
+.cache/
+huggingface/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store

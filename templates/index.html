@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Empathy Engine</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0d0d0d;
+         color: #e8e8e8; min-height: 100vh; display: flex;
+         align-items: center; justify-content: center; padding: 2rem; }
+  .container { width: 100%; max-width: 620px; }
+  h1 { font-size: 1.5rem; font-weight: 500; margin-bottom: .3rem; }
+  .sub { font-size: .85rem; color: #666; margin-bottom: 2rem; }
+  textarea { width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a;
+             border-radius: 10px; color: #e8e8e8; font-size: .95rem;
+             padding: .9rem 1rem; resize: vertical; min-height: 110px;
+             font-family: inherit; }
+  textarea:focus { outline: none; border-color: #6366f1; }
+  button#btn { width: 100%; margin-top: .75rem; padding: .7rem;
+               background: #6366f1; color: #fff; border: none;
+               border-radius: 8px; font-size: .95rem; cursor: pointer;
+               transition: opacity .15s; }
+  button#btn:hover { opacity: .88; }
+  button#btn:disabled { opacity: .45; cursor: default; }
+  .result { margin-top: 1.5rem; background: #111; border: 1px solid #1e1e1e;
+            border-radius: 12px; padding: 1.25rem; display: none; }
+  .emotion-badge { display: inline-block; padding: .3rem .9rem;
+                   border-radius: 99px; font-size: .8rem; font-weight: 500;
+                   background: #1e1e3a; color: #818cf8; margin-bottom: 1rem; }
+  .params { display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px; margin-bottom: 1.25rem; }
+  .param { background: #1a1a1a; border-radius: 8px; padding: .6rem .75rem; }
+  .param-label { font-size: .7rem; color: #555; text-transform: uppercase;
+                 letter-spacing: .05em; margin-bottom: .2rem; }
+  .param-val { font-size: 1rem; font-weight: 500; color: #e8e8e8; }
+  audio { width: 100%; border-radius: 8px; }
+  .error { color: #f87171; font-size: .85rem; margin-top: .75rem; display: none; }
+  .intensity-bar { height: 4px; background: #222; border-radius: 99px;
+                   margin-bottom: 1rem; overflow: hidden; }
+  .intensity-fill { height: 100%; background: #6366f1; border-radius: 99px;
+                    transition: width .5s ease; }
+</style>
+</head><body>
+<div class="container">
+  <h1>The Empathy Engine</h1>
+  <p class="sub">Type any sentence. Hear it spoken with matching emotion.</p>
+  <textarea id="txt" placeholder="e.g. I am so thrilled about this opportunity!"></textarea>
+  <button id="btn" onclick="run()">Synthesize</button>
+  <p class="error" id="err"></p>
+  <div class="result" id="result">
+    <div class="emotion-badge" id="badge">neutral</div>
+    <div class="intensity-bar"><div class="intensity-fill" id="ibar" style="width:0%"></div></div>
+    <div class="params">
+      <div class="param"><div class="param-label">Rate</div><div class="param-val" id="p-rate">—</div></div>
+      <div class="param"><div class="param-label">Pitch</div><div class="param-val" id="p-pitch">—</div></div>
+      <div class="param"><div class="param-label">Volume</div><div class="param-val" id="p-vol">—</div></div>
+    </div>
+    <audio id="player" controls></audio>
+  </div>
+</div>
+<script>
+async function run() {
+  const text = document.getElementById('txt').value.trim();
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  err.style.display = 'none';
+  if (!text) { showErr('Please enter some text.'); return; }
+  btn.disabled = true; btn.textContent = 'Processing...';
+  try {
+    const res = await fetch('/synthesize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    const d = await res.json();
+    if (d.error) { showErr(d.error); return; }
+    document.getElementById('badge').textContent = d.emotion + ' · ' + Math.round(d.intensity * 100) + '% intensity';
+    document.getElementById('ibar').style.width = (d.intensity * 100) + '%';
+    document.getElementById('p-rate').textContent = d.rate + ' wpm';
+    document.getElementById('p-pitch').textContent = (d.pitch >= 0 ? '+' : '') + d.pitch.toFixed(1) + ' st';
+    document.getElementById('p-vol').textContent = (d.volume_db >= 0 ? '+' : '') + d.volume_db.toFixed(1) + ' dB';
+    const player = document.getElementById('player');
+    player.src = d.audio_url + '?t=' + Date.now();
+    player.load(); player.play();
+    document.getElementById('result').style.display = 'block';
+  } catch(e) { showErr('Network error. Is the server running?'); }
+  finally { btn.disabled = false; btn.textContent = 'Synthesize'; }
+}
+function showErr(msg) {
+  const e = document.getElementById('err');
+  e.textContent = msg; e.style.display = 'block';
+}
+document.getElementById('txt').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) run();
+});
+</script>
+</body></html>
