@@ -102,7 +102,7 @@
 
     .params {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
       gap: 8px;
       margin-bottom: 1.25rem;
     }
@@ -153,6 +153,45 @@
       border-radius: 99px;
       transition: width .5s ease;
     }
+
+    /* SSML Panel */
+    .ssml-toggle {
+      margin-top: 1rem;
+      cursor: pointer;
+      font-size: .78rem;
+      color: #6366f1;
+      user-select: none;
+      display: inline-block;
+    }
+    .ssml-toggle:hover { text-decoration: underline; }
+
+    .ssml-panel {
+      display: none;
+      margin-top: .75rem;
+      background: #0a0a14;
+      border: 1px solid #1e1e3a;
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      overflow-x: auto;
+    }
+
+    .ssml-panel pre {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: .75rem;
+      color: #a5b4fc;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .ssml-label {
+      font-size: .65rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .4rem;
+    }
   </style>
 </head>
 
@@ -181,8 +220,17 @@
           <div class="param-label">Volume</div>
           <div class="param-val" id="p-vol">—</div>
         </div>
+        <div class="param">
+          <div class="param-label">Pause</div>
+          <div class="param-val" id="p-pause">—</div>
+        </div>
       </div>
       <audio id="player" controls></audio>
+      <span class="ssml-toggle" id="ssml-toggle" onclick="toggleSSML()">▶ Show SSML Markup</span>
+      <div class="ssml-panel" id="ssml-panel">
+        <div class="ssml-label">Generated SSML (Speech Synthesis Markup Language)</div>
+        <pre id="ssml-code"></pre>
+      </div>
     </div>
   </div>
   <script>
@@ -206,16 +254,35 @@
         document.getElementById('p-rate').textContent = d.rate + ' wpm';
         document.getElementById('p-pitch').textContent = (d.pitch >= 0 ? '+' : '') + d.pitch.toFixed(1) + ' st';
         document.getElementById('p-vol').textContent = (d.volume_db >= 0 ? '+' : '') + d.volume_db.toFixed(1) + ' dB';
+        document.getElementById('p-pause').textContent = d.pause_ms + ' ms';
+        // SSML display
+        if (d.ssml) {
+          document.getElementById('ssml-code').textContent = d.ssml;
+        }
         const player = document.getElementById('player');
         player.src = d.audio_url + '?t=' + Date.now();
         player.load(); player.play();
         document.getElementById('result').style.display = 'block';
+        // Reset SSML panel
+        document.getElementById('ssml-panel').style.display = 'none';
+        document.getElementById('ssml-toggle').textContent = '▶ Show SSML Markup';
       } catch (e) { showErr('Network error. Is the server running?'); }
       finally { btn.disabled = false; btn.textContent = 'Synthesize'; }
     }
     function showErr(msg) {
       const e = document.getElementById('err');
       e.textContent = msg; e.style.display = 'block';
+    }
+    function toggleSSML() {
+      const panel = document.getElementById('ssml-panel');
+      const toggle = document.getElementById('ssml-toggle');
+      if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        toggle.textContent = '▼ Hide SSML Markup';
+      } else {
+        panel.style.display = 'none';
+        toggle.textContent = '▶ Show SSML Markup';
+      }
     }
     document.getElementById('txt').addEventListener('keydown', e => {
       if (e.key === 'Enter' && e.ctrlKey) run();

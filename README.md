@@ -86,35 +86,35 @@ We use a dual-layer approach for emotion detection (`emotion_detector.py`):
 - **Primary:** HuggingFace `j-hartmann/emotion-english-distilroberta-base`. This gives us granular emotion categories (joy/happy, anger, sadness, fear, disgust, surprise, neutral) with high accuracy and confidence scores.
 - **Fallback:** VADER Sentiment Analysis. If the HuggingFace model fails or is unavailable, we fallback to VADER to calculate a compound sentiment score, which is then mapped to simple baseline emotions (happy, positive, angry, sad, neutral).
 
-### 2. Emotion to Voice Parameter Mapping
+### 2. Emotion to Voice Parameter Mapping (PAD Framework)
 
-The translation of emotion to speech parameters happens in `voice_mapper.py`. We defined baseline "Neutral" properties:
+The translation of emotion to speech parameters happens in `voice_mapper.py`. We evolved from simple baseline modifiers to using the **Pleasure-Arousal-Dominance (PAD)** dimensional emotion model (Russell & Mehrabian), based on research by Murray & Arnott (2000).
 
-- **Rate:** 150 words per minute (wpm)
-- **Pitch Shift:** 0 semitones
-- **Volume:** 0 dB
+- **Rate:** 150 words per minute (wpm) baseline
+- **Pitch Shift:** 0 semitones baseline
+- **Volume:** 0 dB baseline
 
-Each detected emotion modifies these properties according to specific profiles:
+Each emotion is mapped to PAD coordinates, where **Arousal (A)** is the primary driver for rate and pitch:
+- **Happy / Excited (High Arousal, High Pleasure):** Increased speech rate (195-210), higher pitch (+3 to +4 semitones), and increased volume.
+- **Sad (Low Arousal, Low Pleasure):** Slower speech rate (135), lower flat pitch (-3 semitones), and decreased volume (-3 dB). 
+- **Angry (High Arousal, Low Pleasure):** Faster speech rate (195), slightly lower pitch (-1 semitone), and abruptly increased volume (+6 dB).
+- **Fearful (High Arousal, Low Dominance):** Faster speech rate (195), elevated pitch (+4 semitones).
 
-- **Happy / Excited:** Increased speech rate (180-210), higher pitch (+2 to +4 semitones), and increased volume.
-- **Sad:** Significantly slower speech rate (105), lower pitch (-3 semitones), and decreased volume (-3 dB).
-- **Angry:** Faster speech rate (175), slightly lower pitch (-1 semitone), and abruptly increased volume (+5 dB).
-- **Fearful:** Faster speech rate (190), elevated pitch (+3 semitones).
-- **Surprised:** Faster speech rate (195), elevated pitch (+5 semitones), and increased volume (+3 dB).
-- **Disgusted:** Slower speech rate (120), lower pitch (-2 semitones).
+### 3. Intensity Scaling and Dampening
 
-### 3. Intensity Scaling
-
-The intensity (confidence score from the emotion detector) is used to linearly scale the vocal parameter adjustments:
+The intensity (confidence score blending HuggingFace + VADER and typographic cues like ALL CAPS or `!!!`) is used to linearly scale the vocal parameter adjustments:
 
 ```python
 scaled_parameter = Neutral_Value + (Target_Emotion_Value - Neutral_Value) * intensity
 ```
 
-This ensures that a "mildly happy" sentence doesn't sound overwhelmingly ecstatic, while a "deeply sad" sentence receives the full pitch and speed reduction.
+To prevent the "uncanny valley" effect of machines over-expressing emotions (expectation-disconfirmation theory), we applied a strict **Maximum Intensity Cap (0.85)**. This ensures that even "mildly happy" sentences scale appropriately, while extreme emotions never cross into artificial hyper-expression.
 
-### 4. TTS Engine & Pydub Effects
+### 4. Native SSML and TTS Pipeline (Bonus Objective)
 
-For audio synthesis (`tts_engine.py`), the app primarily relies on **Coqui TTS** for high-quality, natural-sounding speech. If Coqui is missing or fails, the engine gracefully falls back to **gTTS** (Google TTS).
+For audio synthesis (`tts_engine.py`), the app implements **Speech Synthesis Markup Language (SSML)** to gain true parametric control over the voice.
 
-- After raw audio generation, we use `pydub` (`AudioSegment`) to manipulate the pitch (by tweaking the sample frame rate) and volume (db amplification) according to our scaled parameters, before exporting the final `.wav` file to the static output folder.
+We adopted the following priority fallback chain:
+1. **edge-tts (Microsoft Neural Voices):** Our primary engine. It natively parses our generated `<prosody rate="..." pitch="..." volume="...">` and `<break time="...ms"/>` SSML tags, rendering highly natural, independent pitch and rate variance without post-processing distortion.
+2. **Coqui TTS:** High-quality offline fallback (Tacotron2-DDC) using `pydub` frame-rate adjustments to simulate prosody.
+3. **gTTS:** Last-resort online fallback using `pydub` for offline modifications.

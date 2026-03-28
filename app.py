@@ -27,6 +27,11 @@ def synthesize():
             'rate':       result['profile']['rate'],
             'pitch':      result['profile']['pitch_shift'],
             'volume_db':  result['profile']['volume_db'],
+            'ssml_rate':  result['profile'].get('ssml_rate', ''),
+            'ssml_pitch': result['profile'].get('ssml_pitch', ''),
+            'ssml_vol':   result['profile'].get('ssml_volume', ''),
+            'pause_ms':   result['profile'].get('pause_ms', 0),
+            'ssml':       result.get('ssml', ''),
             'audio_url':  '/static/output.wav',
         })
     except Exception as e:
